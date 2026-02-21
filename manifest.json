@@ -1,0 +1,45 @@
+{
+    "name": "Space Observation Journal",
+    "short_name": "SpaceJournal",
+    "description": "Log your celestial observations, track constellations, and document your journey through the cosmos.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#1a1a2e",
+    "theme_color": "#667eea",
+    "orientation": "any",
+    "scope": "/",
+    "lang": "en-US",
+    "categories": [
+        "education",
+        "productivity",
+        "lifestyle"
+    ],
+    "icons": [
+        {
+            "src": "icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "New Observation",
+            "short_name": "New Entry",
+            "description": "Log a new celestial observation",
+            "url": "/#new-observation",
+            "icons": [
+                {
+                    "src": "icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ]
+}

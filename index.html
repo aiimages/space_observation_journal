@@ -1,0 +1,2033 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Space Observation Journal</title>
+  <meta name="description"
+    content="Log your celestial observations, track constellations, and document your journey through the cosmos with The Universe Episodes observation journal." />
+  <!-- PWA Manifest & Theme -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#667eea" />
+  <!-- iOS PWA Support -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SpaceJournal" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600&family=Inter:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+  <style>
+    /* ===== CSS RESET & BASE ===== */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --space-black: #03040a;
+      --space-navy: #080d1a;
+      --space-deep: #0b1128;
+      --nebula-purple: #7c3aed;
+      --nebula-violet: #a855f7;
+      --nebula-pink: #ec4899;
+      --star-blue: #3b82f6;
+      --star-cyan: #06b6d4;
+      --star-gold: #f59e0b;
+      --star-white: #f8fafc;
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #475569;
+      --glass-bg: rgba(255, 255, 255, 0.04);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-hover: rgba(255, 255, 255, 0.07);
+      --card-bg: rgba(12, 18, 40, 0.85);
+      --input-bg: rgba(255, 255, 255, 0.05);
+      --input-border: rgba(168, 85, 247, 0.3);
+      --input-focus: rgba(168, 85, 247, 0.7);
+      --success: #10b981;
+      --danger: #ef4444;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', 'Rajdhani', sans-serif;
+      background-color: var(--space-black);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* ===== STARFIELD CANVAS ===== */
+    #starfield {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ===== NEBULA BLOBS ===== */
+    .nebula {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.12;
+      pointer-events: none;
+      z-index: 0;
+      animation: nebulaDrift 20s ease-in-out infinite alternate;
+    }
+
+    .nebula-1 {
+      width: 600px;
+      height: 600px;
+      background: var(--nebula-purple);
+      top: -100px;
+      left: -150px;
+      animation-delay: 0s;
+    }
+
+    .nebula-2 {
+      width: 500px;
+      height: 400px;
+      background: var(--star-blue);
+      top: 30%;
+      right: -100px;
+      animation-delay: -7s;
+    }
+
+    .nebula-3 {
+      width: 450px;
+      height: 450px;
+      background: var(--nebula-pink);
+      bottom: -50px;
+      left: 30%;
+      animation-delay: -14s;
+    }
+
+    @keyframes nebulaDrift {
+      0% {
+        transform: translate(0, 0) scale(1);
+      }
+
+      100% {
+        transform: translate(30px, 20px) scale(1.08);
+      }
+    }
+
+    /* ===== LAYOUT ===== */
+    .app-wrapper {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      padding: 20px 16px;
+      text-align: center;
+      background: linear-gradient(180deg, rgba(3, 4, 10, 0.95) 0%, transparent 100%);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .site-link {
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .site-link:hover .site-title {
+      text-shadow: 0 0 40px rgba(168, 85, 247, 0.8);
+    }
+
+    .site-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.1rem, 4vw, 1.7rem);
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      background: linear-gradient(135deg, #a855f7 0%, #3b82f6 40%, #06b6d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      transition: filter 0.3s ease;
+      line-height: 1.2;
+    }
+
+    .site-subtitle {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ===== MAIN CONTENT ===== */
+    main {
+      flex: 1;
+      padding: 24px 16px 60px;
+      max-width: 860px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ===== SECTION HEADINGS ===== */
+    .section-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--nebula-violet);
+      margin-bottom: 6px;
+    }
+
+    .section-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1rem, 3vw, 1.35rem);
+      font-weight: 700;
+      color: var(--star-white);
+      margin-bottom: 20px;
+    }
+
+    /* ===== GLASS CARD ===== */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-xl);
+      padding: 28px 20px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+      margin-bottom: 28px;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 12px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(124, 58, 237, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+    }
+
+    /* ===== FORM ===== */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    @media (min-width: 560px) {
+      .form-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .form-full {
+        grid-column: 1 / -1;
+      }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    label {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    label .req {
+      color: var(--nebula-pink);
+      margin-left: 2px;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="url"],
+    textarea,
+    select {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      padding: 11px 14px;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+      -webkit-appearance: none;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.6) sepia(1) saturate(3) hue-rotate(230deg);
+      cursor: pointer;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--input-focus);
+      box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    select option {
+      background: #1a1a2e;
+      color: var(--text-primary);
+    }
+
+    /* ===== CELESTIAL TAG INPUT ===== */
+    .tag-input-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      min-height: 48px;
+      cursor: text;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+
+    .tag-input-wrapper:focus-within {
+      border-color: var(--input-focus);
+      box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+    }
+
+    .tag-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.5), rgba(59, 130, 246, 0.4));
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      border-radius: 50px;
+      padding: 3px 10px 3px 11px;
+      font-size: 0.78rem;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: #c4b5fd;
+      white-space: nowrap;
+      animation: chipPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes chipPop {
+      from {
+        transform: scale(0.5);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .tag-chip button {
+      background: none;
+      border: none;
+      color: rgba(196, 181, 253, 0.7);
+      cursor: pointer;
+      font-size: 0.9rem;
+      line-height: 1;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      transition: color 0.2s;
+    }
+
+    .tag-chip button:hover {
+      color: var(--nebula-pink);
+    }
+
+    .tag-raw-input {
+      flex: 1;
+      min-width: 100px;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
+      outline: none;
+      padding: 2px 4px;
+    }
+
+    /* ===== PHOTO UPLOAD ===== */
+    .photo-drop-zone {
+      border: 2px dashed rgba(168, 85, 247, 0.4);
+      border-radius: var(--radius-md);
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: rgba(124, 58, 237, 0.03);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .photo-drop-zone:hover,
+    .photo-drop-zone.dragover {
+      border-color: var(--nebula-violet);
+      background: rgba(124, 58, 237, 0.08);
+      box-shadow: 0 0 30px rgba(124, 58, 237, 0.15);
+    }
+
+    .photo-drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .upload-icon {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      display: block;
+      animation: floatIcon 3s ease-in-out infinite;
+    }
+
+    @keyframes floatIcon {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+
+    .upload-text {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .upload-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .preview-item {
+      aspect-ratio: 1;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      position: relative;
+      border: 1px solid var(--glass-border);
+      animation: chipPop 0.25s ease;
+    }
+
+    .preview-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .preview-remove {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: rgba(0, 0, 0, 0.7);
+      border: none;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .preview-remove:hover {
+      background: var(--danger);
+    }
+
+    /* ===== WEATHER / CONDITIONS ROW ===== */
+    .condition-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .condition-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 50px;
+      padding: 7px 14px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--text-secondary);
+      user-select: none;
+    }
+
+    .condition-pill:hover {
+      border-color: var(--nebula-violet);
+      color: var(--text-primary);
+    }
+
+    .condition-pill.active {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.4), rgba(59, 130, 246, 0.3));
+      border-color: var(--nebula-violet);
+      color: #c4b5fd;
+      box-shadow: 0 0 12px rgba(124, 58, 237, 0.2);
+    }
+
+    /* ===== RATING STARS ===== */
+    .star-rating {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .star-btn {
+      font-size: 1.5rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.15s ease, filter 0.15s ease;
+      opacity: 0.3;
+      filter: grayscale(1);
+    }
+
+    .star-btn.lit {
+      opacity: 1;
+      filter: none;
+    }
+
+    .star-btn:hover {
+      transform: scale(1.25);
+    }
+
+    /* ===== BUTTON ===== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 13px 28px;
+      border-radius: 50px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--nebula-purple) 0%, var(--star-blue) 100%);
+      color: white;
+      box-shadow: 0 4px 24px rgba(124, 58, 237, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 36px rgba(124, 58, 237, 0.6);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--glass-border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--nebula-violet);
+      color: var(--nebula-violet);
+    }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      font-size: 0.68rem;
+      padding: 6px 14px;
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    /* ===== TOAST ===== */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.1));
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      backdrop-filter: blur(16px);
+      z-index: 9999;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s;
+      opacity: 0;
+      white-space: nowrap;
+    }
+
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    #toast.error {
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* ===== RECORDS ===== */
+    .records-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .records-count {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--text-muted);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 50px;
+      padding: 4px 12px;
+    }
+
+    .search-bar {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .search-bar input {
+      padding-left: 38px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+      font-size: 0.9rem;
+    }
+
+    .sort-select-wrap {
+      position: relative;
+    }
+
+    .sort-select-wrap select {
+      font-size: 0.78rem;
+      padding: 8px 30px 8px 12px;
+      border-radius: 50px;
+    }
+
+    /* ===== OBSERVATION CARD ===== */
+    .obs-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .obs-card {
+      background: var(--card-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      backdrop-filter: blur(20px);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      animation: slideIn 0.35s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .obs-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 24px rgba(124, 58, 237, 0.1);
+    }
+
+    .obs-card-header {
+      padding: 16px 20px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      border-bottom: 1px solid var(--glass-border);
+      cursor: pointer;
+    }
+
+    .obs-date-badge {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(59, 130, 246, 0.2));
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      min-width: 52px;
+    }
+
+    .date-month {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.55rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--nebula-violet);
+    }
+
+    .date-day {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--star-white);
+    }
+
+    .date-year {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+
+    .obs-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .obs-location {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--star-cyan);
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 4px;
+    }
+
+    .obs-objects {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 6px;
+    }
+
+    .obs-tag {
+      font-size: 0.7rem;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      background: rgba(124, 58, 237, 0.2);
+      border: 1px solid rgba(168, 85, 247, 0.25);
+      color: #c4b5fd;
+      padding: 2px 9px;
+      border-radius: 50px;
+    }
+
+    .obs-meta-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .obs-rating {
+      font-size: 0.75rem;
+      line-height: 1;
+    }
+
+    .obs-expand-icon {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      transition: transform 0.3s ease;
+    }
+
+    .obs-expand-icon.open {
+      transform: rotate(180deg);
+    }
+
+    .obs-card-body {
+      padding: 0 20px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease, padding 0.3s ease;
+    }
+
+    .obs-card-body.open {
+      max-height: 800px;
+      padding: 16px 20px;
+    }
+
+    .obs-notes {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .obs-photos {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+      gap: 6px;
+      margin-top: 14px;
+    }
+
+    .obs-photo-thumb {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      object-fit: cover;
+      border: 1px solid var(--glass-border);
+      cursor: zoom-in;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .obs-photo-thumb:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+
+    .obs-card-footer {
+      padding: 10px 20px;
+      border-top: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .obs-conditions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .obs-cond-badge {
+      font-size: 0.7rem;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      padding: 2px 9px;
+      border-radius: 50px;
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .empty-icon {
+      font-size: 4rem;
+      display: block;
+      margin-bottom: 16px;
+      animation: floatIcon 4s ease-in-out infinite;
+    }
+
+    .empty-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .empty-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* ===== LIGHTBOX ===== */
+    #lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+      backdrop-filter: blur(8px);
+    }
+
+    #lightbox.open {
+      display: flex;
+    }
+
+    #lightbox img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: var(--radius-md);
+      object-fit: contain;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.8);
+    }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--space-black);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(124, 58, 237, 0.4);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--nebula-purple);
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      text-align: center;
+      padding: 20px 16px;
+      border-top: 1px solid var(--glass-border);
+      background: rgba(3, 4, 10, 0.8);
+      backdrop-filter: blur(12px);
+    }
+
+    footer a {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    footer a:hover {
+      color: var(--nebula-violet);
+    }
+
+    /* ===== DIVIDER ===== */
+    .cosmos-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 32px 0;
+    }
+
+    .cosmos-divider::before,
+    .cosmos-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.3), transparent);
+    }
+
+    .cosmos-divider-icon {
+      font-size: 1rem;
+      opacity: 0.6;
+    }
+
+    /* ===== CHAR COUNTER ===== */
+    .char-counter {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-align: right;
+      margin-top: 2px;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (min-width: 640px) {
+      main {
+        padding: 32px 24px 80px;
+      }
+
+      .card {
+        padding: 36px 32px;
+      }
+    }
+
+    @media (min-width: 768px) {
+      header {
+        padding: 24px;
+      }
+    }
+
+    /* ===== PWA BAR ===== */
+    #pwa-bar {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: rgba(3, 4, 10, 0.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pwa-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pwa-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #install-btn {
+      display: none;
+      align-items: center;
+      gap: 7px;
+      background: linear-gradient(135deg, #667eea 0%, #a855f7 100%);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 8px 18px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(102, 126, 234, 0.45);
+      transition: transform 0.2s, box-shadow 0.2s;
+      animation: installPulse 2.5s ease-in-out infinite;
+    }
+
+    #install-btn.visible {
+      display: flex;
+    }
+
+    #install-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 28px rgba(102, 126, 234, 0.65);
+    }
+
+    @keyframes installPulse {
+
+      0%,
+      100% {
+        box-shadow: 0 4px 18px rgba(102, 126, 234, 0.45);
+      }
+
+      50% {
+        box-shadow: 0 4px 28px rgba(168, 85, 247, 0.7);
+      }
+    }
+
+    #online-badge {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 50px;
+      border: 1px solid;
+      transition: all 0.4s ease;
+    }
+
+    #online-badge.online {
+      color: #34d399;
+      border-color: rgba(52, 211, 153, 0.4);
+      background: rgba(52, 211, 153, 0.08);
+    }
+
+    #online-badge.offline {
+      color: #f87171;
+      border-color: rgba(248, 113, 113, 0.4);
+      background: rgba(248, 113, 113, 0.08);
+    }
+
+    #storage-display {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      padding: 5px 10px;
+      border-radius: 50px;
+      border: 1px solid var(--glass-border);
+      background: var(--glass-bg);
+      white-space: nowrap;
+    }
+
+    .btn-pwa {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      color: var(--text-secondary);
+      border-radius: 50px;
+      padding: 5px 13px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.76rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-pwa:hover {
+      border-color: var(--nebula-violet);
+      color: var(--nebula-violet);
+    }
+
+    #restore-input {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Starfield -->
+  <canvas id="starfield"></canvas>
+
+  <!-- Nebula blobs -->
+  <div class="nebula nebula-1"></div>
+  <div class="nebula nebula-2"></div>
+  <div class="nebula nebula-3"></div>
+
+  <!-- Lightbox -->
+  <div id="lightbox" role="dialog" aria-label="Image viewer">
+    <img id="lightbox-img" src="" alt="Observation photo" />
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" role="alert" aria-live="assertive"></div>
+
+  <!-- PWA Bar -->
+  <div id="pwa-bar" role="toolbar" aria-label="App controls">
+    <div class="pwa-left">
+      <button id="install-btn" aria-label="Install Space Observation Journal">
+        ⬇ Install App
+      </button>
+      <span id="online-badge" class="online" aria-live="polite">🟢 Online</span>
+      <span id="storage-display" aria-label="Storage used">💾 –</span>
+    </div>
+    <div class="pwa-right">
+      <button class="btn-pwa" id="backup-btn" title="Download all observations as JSON">💾 Backup</button>
+      <button class="btn-pwa" id="restore-btn" title="Restore observations from JSON file">📂 Restore</button>
+      <input type="file" id="restore-input" accept=".json" aria-label="Restore from JSON file" />
+    </div>
+  </div>
+
+  <div class="app-wrapper">
+
+    <!-- Header -->
+    <header role="banner">
+      <a href="https://theuniverseepisodes.com/" class="site-link" target="_blank" rel="noopener noreferrer">
+        <h1 class="site-title">✦ THE UNIVERSE EPISODES ✦</h1>
+      </a>
+      <p class="site-subtitle">Space Observation Journal</p>
+    </header>
+
+    <!-- Main -->
+    <main>
+
+      <!-- New Observation Form -->
+      <section aria-labelledby="form-title">
+        <div class="card">
+          <p class="section-label">☄ New Entry</p>
+          <h2 class="section-title" id="form-title">Log an Observation</h2>
+
+          <form id="obs-form" novalidate>
+            <div class="form-grid">
+
+              <!-- Date -->
+              <div class="form-group">
+                <label for="obs-date">Observation Date <span class="req">*</span></label>
+                <input type="date" id="obs-date" name="date" required />
+              </div>
+
+              <!-- Time -->
+              <div class="form-group">
+                <label for="obs-time">Start Time</label>
+                <input type="text" id="obs-time" name="time" placeholder="e.g. 22:30 UTC" />
+              </div>
+
+              <!-- Location -->
+              <div class="form-group form-full">
+                <label for="obs-location">Observation Location <span class="req">*</span></label>
+                <input type="text" id="obs-location" name="location" placeholder="e.g. Mount Wilson, CA — Bortle 3"
+                  required />
+              </div>
+
+              <!-- Celestial Objects - tag input -->
+              <div class="form-group form-full">
+                <label>Celestial Objects / Constellations <span class="req">*</span></label>
+                <div class="tag-input-wrapper" id="tag-wrapper" role="group" aria-label="Celestial object tags">
+                  <input class="tag-raw-input" id="tag-raw-input" type="text"
+                    placeholder="Type a name, press Enter or comma…" aria-label="Add celestial object"
+                    autocomplete="off" />
+                </div>
+              </div>
+
+              <!-- Telescope / Equipment -->
+              <div class="form-group">
+                <label for="obs-equipment">Equipment Used</label>
+                <input type="text" id="obs-equipment" name="equipment" placeholder="e.g. 10&quot; Dobsonian, 25mm EP" />
+              </div>
+
+              <!-- Bortle Scale -->
+              <div class="form-group">
+                <label for="obs-bortle">Sky Darkness (Bortle)</label>
+                <select id="obs-bortle" name="bortle">
+                  <option value="">— Select scale —</option>
+                  <option>1 — Zodiacal light visible</option>
+                  <option>2 — Truly dark sky</option>
+                  <option>3 — Rural sky</option>
+                  <option>4 — Rural / suburban transition</option>
+                  <option>5 — Suburban sky</option>
+                  <option>6 — Bright suburban sky</option>
+                  <option>7 — Suburban / urban transition</option>
+                  <option>8 — City sky</option>
+                  <option>9 — Inner-city sky</option>
+                </select>
+              </div>
+
+              <!-- Conditions -->
+              <div class="form-group form-full">
+                <label>Sky Conditions</label>
+                <div class="condition-pills" id="condition-pills" role="group" aria-label="Sky conditions">
+                  <div class="condition-pill" data-val="Clear" role="checkbox" aria-checked="false" tabindex="0">🌑
+                    Clear</div>
+                  <div class="condition-pill" data-val="Partly Cloudy" role="checkbox" aria-checked="false"
+                    tabindex="0">⛅ Partly Cloudy</div>
+                  <div class="condition-pill" data-val="Windy" role="checkbox" aria-checked="false" tabindex="0">💨
+                    Windy</div>
+                  <div class="condition-pill" data-val="Humid" role="checkbox" aria-checked="false" tabindex="0">💧
+                    Humid</div>
+                  <div class="condition-pill" data-val="Excellent Seeing" role="checkbox" aria-checked="false"
+                    tabindex="0">✨ Excellent Seeing</div>
+                  <div class="condition-pill" data-val="Poor Seeing" role="checkbox" aria-checked="false" tabindex="0">
+                    🌫 Poor Seeing</div>
+                </div>
+              </div>
+
+              <!-- Session Rating -->
+              <div class="form-group">
+                <label>Session Rating</label>
+                <div class="star-rating" id="star-rating" role="group" aria-label="Session rating">
+                  <button type="button" class="star-btn" data-val="1" aria-label="1 star">⭐</button>
+                  <button type="button" class="star-btn" data-val="2" aria-label="2 stars">⭐</button>
+                  <button type="button" class="star-btn" data-val="3" aria-label="3 stars">⭐</button>
+                  <button type="button" class="star-btn" data-val="4" aria-label="4 stars">⭐</button>
+                  <button type="button" class="star-btn" data-val="5" aria-label="5 stars">⭐</button>
+                </div>
+              </div>
+
+              <!-- Notes -->
+              <div class="form-group form-full">
+                <label for="obs-notes">Observation Notes</label>
+                <textarea id="obs-notes" name="notes" rows="5"
+                  placeholder="Describe what you saw — detail, sketches, impressions, anomalies…"
+                  maxlength="2000"></textarea>
+                <div class="char-counter"><span id="notes-count">0</span> / 2000</div>
+              </div>
+
+              <!-- Photo Upload -->
+              <div class="form-group form-full">
+                <label>Photos & Images</label>
+                <div class="photo-drop-zone" id="drop-zone">
+                  <input type="file" id="photo-input" accept="image/*" multiple
+                    aria-label="Upload observation photos" />
+                  <span class="upload-icon">🔭</span>
+                  <div class="upload-text">Drag & drop your sky photos here</div>
+                  <div class="upload-hint">or click to browse — JPG, PNG, WEBP supported</div>
+                </div>
+                <div class="preview-grid" id="preview-grid"></div>
+              </div>
+
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" id="reset-btn">Clear</button>
+              <button type="submit" class="btn btn-primary" id="save-btn">
+                <span>✦ Save Entry</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Divider -->
+      <div class="cosmos-divider"><span class="cosmos-divider-icon">🌌</span></div>
+
+      <!-- Observation Records -->
+      <section aria-labelledby="records-title">
+        <div class="records-header">
+          <div>
+            <p class="section-label">📡 Archive</p>
+            <h2 class="section-title" id="records-title" style="margin-bottom:0">Past Observations</h2>
+          </div>
+          <div class="records-count" id="records-count">0 ENTRIES</div>
+        </div>
+
+        <!-- Search & Sort -->
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:20px;flex-wrap:wrap;">
+          <div class="search-bar" style="flex:1;min-width:200px;margin-bottom:0">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Search by location, object, notes…"
+              aria-label="Search observations" />
+          </div>
+          <div class="sort-select-wrap">
+            <select id="sort-select" aria-label="Sort observations">
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="rating">Top Rated</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- List -->
+        <div class="obs-list" id="obs-list" aria-live="polite" aria-label="Observation records"></div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer>
+      <a href="https://theuniverseepisodes.com/" target="_blank" rel="noopener noreferrer">
+        ✦ THEUNIVERSEEPISODES.COM ✦
+      </a>
+    </footer>
+
+  </div><!-- /.app-wrapper -->
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* =============================
+         STARFIELD CANVAS
+      ============================== */
+      const canvas = document.getElementById('starfield');
+      const ctx = canvas.getContext('2d');
+      let stars = [];
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        generateStars();
+      }
+
+      function generateStars() {
+        stars = [];
+        const count = Math.floor((canvas.width * canvas.height) / 4000);
+        for (let i = 0; i < count; i++) {
+          stars.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: Math.random() * 1.4 + 0.2,
+            alpha: Math.random() * 0.8 + 0.2,
+            speed: Math.random() * 0.003 + 0.001,
+            phase: Math.random() * Math.PI * 2,
+            color: ['#ffffff', '#c4b5fd', '#93c5fd', '#fde68a'][Math.floor(Math.random() * 4)],
+          });
+        }
+      }
+
+      let animFrame;
+      function drawStars(t) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (const s of stars) {
+          const twinkle = s.alpha * (0.65 + 0.35 * Math.sin(t * s.speed * 60 + s.phase));
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = s.color;
+          ctx.globalAlpha = twinkle;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        animFrame = requestAnimationFrame(drawStars);
+      }
+
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+      requestAnimationFrame(drawStars);
+
+      /* =============================
+         STATE
+      ============================== */
+      const STORAGE_KEY = 'tue_observations_v1';
+      let observations = [];
+      let currentPhotos = []; // [{name, url}]
+      let currentTags = [];
+      let currentConditions = [];
+      let currentRating = 0;
+
+      function loadData() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          observations = raw ? JSON.parse(raw) : [];
+        } catch { observations = []; }
+      }
+
+      function saveData() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(observations));
+        } catch { showToast('Storage quota exceeded — some data may not save.', 'error'); }
+      }
+
+      /* =============================
+         TOAST
+      ============================== */
+      let toastTimer;
+      function showToast(msg, type = 'success') {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.className = type === 'error' ? 'error' : '';
+        void el.offsetWidth;
+        el.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+      }
+
+      /* =============================
+         TAG INPUT
+      ============================== */
+      const tagWrapper = document.getElementById('tag-wrapper');
+      const tagRawInput = document.getElementById('tag-raw-input');
+
+      function renderTags() {
+        // Remove old chips
+        tagWrapper.querySelectorAll('.tag-chip').forEach(c => c.remove());
+        currentTags.forEach((tag, i) => {
+          const chip = document.createElement('span');
+          chip.className = 'tag-chip';
+          chip.innerHTML = `${escHtml(tag)}<button type="button" aria-label="Remove ${escHtml(tag)}" data-idx="${i}">✕</button>`;
+          chip.querySelector('button').addEventListener('click', () => {
+            currentTags.splice(i, 1);
+            renderTags();
+          });
+          tagWrapper.insertBefore(chip, tagRawInput);
+        });
+      }
+
+      tagRawInput.addEventListener('keydown', e => {
+        if (['Enter', ','].includes(e.key)) {
+          e.preventDefault();
+          addTag(tagRawInput.value);
+        } else if (e.key === 'Backspace' && tagRawInput.value === '' && currentTags.length) {
+          currentTags.pop();
+          renderTags();
+        }
+      });
+
+      tagRawInput.addEventListener('blur', () => addTag(tagRawInput.value));
+
+      function addTag(val) {
+        const cleaned = val.trim().replace(/,/g, '');
+        if (cleaned && !currentTags.includes(cleaned)) {
+          currentTags.push(cleaned);
+          renderTags();
+        }
+        tagRawInput.value = '';
+      }
+
+      tagWrapper.addEventListener('click', () => tagRawInput.focus());
+
+      /* =============================
+         CONDITIONS PILLS
+      ============================== */
+      document.querySelectorAll('.condition-pill').forEach(pill => {
+        function toggle() {
+          const val = pill.dataset.val;
+          if (currentConditions.includes(val)) {
+            currentConditions = currentConditions.filter(c => c !== val);
+            pill.classList.remove('active');
+            pill.setAttribute('aria-checked', 'false');
+          } else {
+            currentConditions.push(val);
+            pill.classList.add('active');
+            pill.setAttribute('aria-checked', 'true');
+          }
+        }
+        pill.addEventListener('click', toggle);
+        pill.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); } });
+      });
+
+      /* =============================
+         STAR RATING
+      ============================== */
+      const starBtns = document.querySelectorAll('.star-btn');
+      function setRating(n) {
+        currentRating = n;
+        starBtns.forEach(b => {
+          const v = parseInt(b.dataset.val);
+          b.classList.toggle('lit', v <= n);
+        });
+      }
+      starBtns.forEach(b => {
+        b.addEventListener('click', () => setRating(parseInt(b.dataset.val)));
+        b.addEventListener('mouseenter', () => starBtns.forEach(x => x.classList.toggle('lit', parseInt(x.dataset.val) <= parseInt(b.dataset.val))));
+        b.addEventListener('mouseleave', () => setRating(currentRating));
+      });
+
+      /* =============================
+         PHOTO UPLOAD
+      ============================== */
+      const dropZone = document.getElementById('drop-zone');
+      const photoInput = document.getElementById('photo-input');
+      const previewGrid = document.getElementById('preview-grid');
+
+      dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+      dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+      });
+      photoInput.addEventListener('change', () => handleFiles(photoInput.files));
+
+      function handleFiles(files) {
+        Array.from(files).forEach(file => {
+          if (!file.type.startsWith('image/')) return;
+          const reader = new FileReader();
+          reader.onload = ev => {
+            currentPhotos.push({ name: file.name, url: ev.target.result });
+            renderPreviews();
+          };
+          reader.readAsDataURL(file);
+        });
+        photoInput.value = '';
+      }
+
+      function renderPreviews() {
+        previewGrid.innerHTML = '';
+        currentPhotos.forEach((p, i) => {
+          const item = document.createElement('div');
+          item.className = 'preview-item';
+          item.innerHTML = `<img src="${p.url}" alt="${escHtml(p.name)}" />
+        <button class="preview-remove" type="button" aria-label="Remove ${escHtml(p.name)}" data-idx="${i}">✕</button>`;
+          item.querySelector('button').addEventListener('click', () => {
+            currentPhotos.splice(i, 1);
+            renderPreviews();
+          });
+          previewGrid.appendChild(item);
+        });
+      }
+
+      /* =============================
+         NOTES CHAR COUNTER
+      ============================== */
+      const notesEl = document.getElementById('obs-notes');
+      const notesCount = document.getElementById('notes-count');
+      notesEl.addEventListener('input', () => { notesCount.textContent = notesEl.value.length; });
+
+      /* =============================
+         FORM SUBMIT
+      ============================== */
+      document.getElementById('obs-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const date = document.getElementById('obs-date').value;
+        const location = document.getElementById('obs-location').value.trim();
+
+        if (!date) { showToast('Please select an observation date.', 'error'); return; }
+        if (!location) { showToast('Please enter the observation location.', 'error'); return; }
+        if (!currentTags.length) { showToast('Add at least one celestial object.', 'error'); return; }
+
+        const obs = {
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+          date,
+          time: document.getElementById('obs-time').value.trim(),
+          location,
+          objects: [...currentTags],
+          equipment: document.getElementById('obs-equipment').value.trim(),
+          bortle: document.getElementById('obs-bortle').value,
+          conditions: [...currentConditions],
+          rating: currentRating,
+          notes: notesEl.value.trim(),
+          photos: currentPhotos.map(p => ({ name: p.name, url: p.url })),
+          createdAt: Date.now(),
+        };
+
+        observations.unshift(obs);
+        saveData();
+        resetForm();
+        renderObservations();
+        showToast('✦ Observation saved to the archive!');
+      });
+
+      document.getElementById('reset-btn').addEventListener('click', resetForm);
+
+      function resetForm() {
+        document.getElementById('obs-form').reset();
+        currentTags = [];
+        currentConditions = [];
+        currentPhotos = [];
+        currentRating = 0;
+        renderTags();
+        renderPreviews();
+        setRating(0);
+        document.querySelectorAll('.condition-pill').forEach(p => {
+          p.classList.remove('active');
+          p.setAttribute('aria-checked', 'false');
+        });
+        notesCount.textContent = '0';
+        // Set date to today
+        const today = new Date().toISOString().slice(0, 10);
+        document.getElementById('obs-date').value = today;
+      }
+
+      /* =============================
+         SEARCH & SORT
+      ============================== */
+      let searchQuery = '';
+      let sortMode = 'newest';
+
+      document.getElementById('search-input').addEventListener('input', e => {
+        searchQuery = e.target.value.toLowerCase();
+        renderObservations();
+      });
+      document.getElementById('sort-select').addEventListener('change', e => {
+        sortMode = e.target.value;
+        renderObservations();
+      });
+
+      /* =============================
+         RENDER OBSERVATIONS
+      ============================== */
+      function renderObservations() {
+        const list = document.getElementById('obs-list');
+        const countEl = document.getElementById('records-count');
+
+        let filtered = observations.filter(obs => {
+          if (!searchQuery) return true;
+          return (
+            obs.location.toLowerCase().includes(searchQuery) ||
+            obs.notes.toLowerCase().includes(searchQuery) ||
+            obs.objects.some(o => o.toLowerCase().includes(searchQuery)) ||
+            obs.equipment.toLowerCase().includes(searchQuery)
+          );
+        });
+
+        if (sortMode === 'newest') filtered.sort((a, b) => b.createdAt - a.createdAt);
+        else if (sortMode === 'oldest') filtered.sort((a, b) => a.createdAt - b.createdAt);
+        else if (sortMode === 'rating') filtered.sort((a, b) => b.rating - a.rating || b.createdAt - a.createdAt);
+
+        countEl.textContent = `${observations.length} ${observations.length === 1 ? 'ENTRY' : 'ENTRIES'}`;
+
+        if (!filtered.length) {
+          list.innerHTML = observations.length === 0
+            ? `<div class="empty-state">
+            <span class="empty-icon">🌌</span>
+            <div class="empty-title">The cosmos awaits your first log</div>
+            <div class="empty-desc">Use the form above to record your first celestial observation.</div>
+           </div>`
+            : `<div class="empty-state">
+            <span class="empty-icon">🔭</span>
+            <div class="empty-title">No matching observations</div>
+            <div class="empty-desc">Try a different search term.</div>
+           </div>`;
+          return;
+        }
+
+        list.innerHTML = '';
+        filtered.forEach(obs => {
+          const el = buildObsCard(obs);
+          list.appendChild(el);
+        });
+      }
+
+      function buildObsCard(obs) {
+        const d = new Date(obs.date + 'T00:00:00');
+        const month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+        const day = String(d.getDate()).padStart(2, '0');
+        const year = d.getFullYear();
+
+        const stars = obs.rating ? '⭐'.repeat(obs.rating) : '';
+        const condHtml = obs.conditions.map(c => `<span class="obs-cond-badge">${escHtml(c)}</span>`).join('');
+        const tagsHtml = obs.objects.map(o => `<span class="obs-tag">${escHtml(o)}</span>`).join('');
+        const photosHtml = obs.photos && obs.photos.length
+          ? `<div class="obs-photos">${obs.photos.map(p =>
+            `<img src="${p.url}" alt="${escHtml(p.name)}" class="obs-photo-thumb" loading="lazy" />`
+          ).join('')}</div>` : '';
+
+        const metaLine = [obs.time, obs.equipment, obs.bortle].filter(Boolean).map(s =>
+          `<span style="color:var(--text-muted);font-size:0.78rem;font-family:'Rajdhani',sans-serif;">${escHtml(s)}</span>`
+        ).join('<span style="color:var(--text-muted);margin:0 6px;">·</span>');
+
+        const article = document.createElement('article');
+        article.className = 'obs-card';
+        article.dataset.id = obs.id;
+        article.innerHTML = `
+      <div class="obs-card-header" role="button" tabindex="0" aria-expanded="false" aria-controls="body-${obs.id}">
+        <div class="obs-date-badge" aria-label="${obs.date}">
+          <span class="date-month">${month}</span>
+          <span class="date-day">${day}</span>
+          <span class="date-year">${year}</span>
+        </div>
+        <div class="obs-main">
+          <div class="obs-location">📍 ${escHtml(obs.location)}</div>
+          ${metaLine ? `<div style="margin-top:4px;display:flex;gap:8px;flex-wrap:wrap;">${metaLine}</div>` : ''}
+          <div class="obs-objects">${tagsHtml}</div>
+        </div>
+        <div class="obs-meta-right">
+          ${stars ? `<div class="obs-rating" aria-label="${obs.rating} stars">${stars}</div>` : ''}
+          <span class="obs-expand-icon" aria-hidden="true">▼</span>
+        </div>
+      </div>
+      <div class="obs-card-body" id="body-${obs.id}">
+        ${obs.notes ? `<div class="obs-notes">${escHtml(obs.notes)}</div>` : '<div class="obs-notes" style="color:var(--text-muted);font-style:italic;">No notes recorded.</div>'}
+        ${photosHtml}
+      </div>
+      ${(condHtml || true) ? `
+      <div class="obs-card-footer">
+        <div class="obs-conditions">${condHtml || '<span class="obs-cond-badge">No conditions logged</span>'}</div>
+        <button class="btn btn-danger" data-delete="${obs.id}" aria-label="Delete this observation">Delete</button>
+      </div>` : ''}
+    `;
+
+        // Expand/collapse
+        const header = article.querySelector('.obs-card-header');
+        const body = article.querySelector('.obs-card-body');
+        const icon = article.querySelector('.obs-expand-icon');
+        function toggleExpand() {
+          const isOpen = body.classList.toggle('open');
+          icon.classList.toggle('open', isOpen);
+          header.setAttribute('aria-expanded', isOpen);
+        }
+        header.addEventListener('click', toggleExpand);
+        header.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(); } });
+
+        // Lightbox photos
+        article.querySelectorAll('.obs-photo-thumb').forEach(img => {
+          img.addEventListener('click', e => {
+            e.stopPropagation();
+            openLightbox(img.src);
+          });
+        });
+
+        // Delete
+        const deleteBtn = article.querySelector('[data-delete]');
+        if (deleteBtn) {
+          deleteBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            deleteObservation(obs.id);
+          });
+        }
+
+        return article;
+      }
+
+      function deleteObservation(id) {
+        if (!confirm('Remove this observation entry from the archive?')) return;
+        observations = observations.filter(o => o.id !== id);
+        saveData();
+        renderObservations();
+        showToast('Entry removed from archive.');
+      }
+
+      /* =============================
+         LIGHTBOX
+      ============================== */
+      function openLightbox(src) {
+        const lb = document.getElementById('lightbox');
+        document.getElementById('lightbox-img').src = src;
+        lb.classList.add('open');
+      }
+      document.getElementById('lightbox').addEventListener('click', () => {
+        document.getElementById('lightbox').classList.remove('open');
+        document.getElementById('lightbox-img').src = '';
+      });
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+          document.getElementById('lightbox').classList.remove('open');
+        }
+      });
+
+      /* =============================
+         UTIL
+      ============================== */
+      function escHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      /* =============================
+         INIT
+      ============================== */
+      loadData();
+      resetForm();
+      renderObservations();
+
+    })();
+
+    /* =====================================================
+       PWA ENHANCEMENTS
+       - Service Worker registration
+       - Install prompt (beforeinstallprompt / appinstalled)
+       - Online / Offline status indicator
+       - Backup to JSON / Restore from JSON
+       - Storage usage estimate
+    ===================================================== */
+    (function () {
+      'use strict';
+
+      const STORAGE_KEY = 'tue_observations_v1';
+
+      // ── Toast helper (re-uses existing toast element) ──
+      function toast(msg, type) {
+        const el = document.getElementById('toast');
+        if (!el) return;
+        el.textContent = msg;
+        el.className = type === 'error' ? 'error' : '';
+        void el.offsetWidth;
+        el.classList.add('show');
+        clearTimeout(el._t);
+        el._t = setTimeout(() => el.classList.remove('show'), 3500);
+      }
+
+      // ── Service Worker Registration ──────────────────
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => {
+              console.log('[PWA] Service Worker registered, scope:', reg.scope);
+              // When a new SW is waiting, prompt user to reload
+              reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    toast('✦ App updated — refresh for latest version.');
+                  }
+                });
+              });
+            })
+            .catch(err => console.warn('[PWA] SW registration failed:', err));
+        });
+      }
+
+      // ── Install Prompt ───────────────────────────────
+      let deferredInstallPrompt = null;
+      const installBtn = document.getElementById('install-btn');
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        if (installBtn) installBtn.classList.add('visible');
+      });
+
+      if (installBtn) {
+        installBtn.addEventListener('click', async () => {
+          if (!deferredInstallPrompt) return;
+          deferredInstallPrompt.prompt();
+          const { outcome } = await deferredInstallPrompt.userChoice;
+          if (outcome === 'accepted') {
+            installBtn.classList.remove('visible');
+            toast('🚀 Space Journal installed successfully!');
+          }
+          deferredInstallPrompt = null;
+        });
+      }
+
+      window.addEventListener('appinstalled', () => {
+        deferredInstallPrompt = null;
+        if (installBtn) installBtn.classList.remove('visible');
+        toast('🚀 App installed! Launch from your desktop anytime.');
+      });
+
+      // ── Online / Offline Status ──────────────────────
+      const badge = document.getElementById('online-badge');
+
+      function setOnlineStatus(online) {
+        if (!badge) return;
+        if (online) {
+          badge.textContent = '🟢 Online';
+          badge.className = 'online';
+        } else {
+          badge.textContent = '🔴 Offline';
+          badge.className = 'offline';
+          toast('📡 You are offline — app still works!');
+        }
+      }
+
+      setOnlineStatus(navigator.onLine);
+      window.addEventListener('online', () => setOnlineStatus(true));
+      window.addEventListener('offline', () => setOnlineStatus(false));
+
+      // ── Storage Usage Display ────────────────────────
+      async function updateStorageDisplay() {
+        const el = document.getElementById('storage-display');
+        if (!el || !navigator.storage || !navigator.storage.estimate) return;
+        try {
+          const { usage, quota } = await navigator.storage.estimate();
+          const usedMB = (usage / (1024 * 1024)).toFixed(2);
+          const quotaMB = Math.round(quota / (1024 * 1024));
+          el.textContent = `💾 ${usedMB} MB / ${quotaMB} MB`;
+        } catch {
+          el.textContent = '💾 –';
+        }
+      }
+
+      updateStorageDisplay();
+      // Refresh storage display whenever data might change
+      window.addEventListener('focus', updateStorageDisplay);
+
+      // ── Backup to JSON ───────────────────────────────
+      document.getElementById('backup-btn')?.addEventListener('click', () => {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          const data = raw ? JSON.parse(raw) : [];
+          if (!data.length) { toast('No observations to backup yet.', 'error'); return; }
+
+          const blob = new Blob(
+            [JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), observations: data }, null, 2)],
+            { type: 'application/json' }
+          );
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          const date = new Date().toISOString().slice(0, 10);
+          a.href = url;
+          a.download = `space-journal-backup-${date}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          toast(`✦ Backup of ${data.length} observation(s) downloaded!`);
+        } catch (err) {
+          toast('Backup failed: ' + err.message, 'error');
+        }
+      });
+
+      // ── Restore from JSON ────────────────────────────
+      const restoreBtn = document.getElementById('restore-btn');
+      const restoreInput = document.getElementById('restore-input');
+
+      restoreBtn?.addEventListener('click', () => restoreInput?.click());
+
+      restoreInput?.addEventListener('change', () => {
+        const file = restoreInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const parsed = JSON.parse(ev.target.result);
+            // Accept both wrapped format {observations:[]} and raw array
+            const imported = Array.isArray(parsed)
+              ? parsed
+              : (Array.isArray(parsed.observations) ? parsed.observations : null);
+
+            if (!imported) throw new Error('Unrecognised file format.');
+
+            const existing = (() => {
+              try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+              catch { return []; }
+            })();
+
+            // Merge: add records whose id doesn't already exist
+            const existingIds = new Set(existing.map(o => o.id));
+            const newObs = imported.filter(o => o.id && !existingIds.has(o.id));
+            const merged = [...newObs, ...existing];
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+
+            toast(`✦ Restored ${newObs.length} new observation(s). Reloading…`);
+            setTimeout(() => window.location.reload(), 1800);
+          } catch (err) {
+            toast('Restore failed: ' + err.message, 'error');
+          }
+        };
+        reader.readAsText(file);
+        restoreInput.value = '';
+      });
+
+      updateStorageDisplay();
+    })();
+  </script>
+</body>
+
+</html>

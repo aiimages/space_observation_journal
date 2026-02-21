@@ -1167,6 +1167,105 @@
     #restore-input {
       display: none;
     }
+
+    /* ===== AUTO-SAVE NOTIFICATION ===== */
+    #autosave-notice {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      background: rgba(139, 92, 246, 0.18);
+      border: 1px solid rgba(139, 92, 246, 0.45);
+      color: #c4b5fd;
+      padding: 7px 16px;
+      border-radius: 50px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 9998;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    #autosave-notice.show {
+      opacity: 1;
+    }
+
+    /* ===== BACKUP REMINDER BANNER ===== */
+    #backup-reminder-banner {
+      position: sticky;
+      top: 0;
+      z-index: 300;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+      color: #1a0a00;
+      padding: 10px 16px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.5);
+      animation: bannerSlideDown 0.4s ease;
+    }
+    #backup-reminder-banner.show {
+      display: flex;
+    }
+    @keyframes bannerSlideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    #banner-backup-now-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(0, 0, 0, 0.18);
+      border: 2px solid rgba(0, 0, 0, 0.35);
+      color: #1a0a00;
+      border-radius: 50px;
+      padding: 5px 16px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #banner-backup-now-btn:hover {
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    /* ===== BACKUP REMINDER MESSAGE ===== */
+    #backup-reminder-msg {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(249, 115, 22, 0.15));
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      color: #fcd34d;
+      border-radius: 50px;
+      padding: 5px 13px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+      animation: pulseWarning 2.5s ease-in-out infinite;
+    }
+    @keyframes pulseWarning {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+      50%       { box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.18); }
+    }
+
+    /* ===== LOAD BACKUP INPUT ===== */
+    #load-backup-input {
+      display: none;
+    }
   </style>
 </head>
 
@@ -1188,6 +1287,15 @@
   <!-- Toast -->
   <div id="toast" role="alert" aria-live="assertive"></div>
 
+  <!-- Auto-save notification -->
+  <div id="autosave-notice" aria-live="polite">✓ Auto-saved</div>
+
+  <!-- Backup Reminder Banner (shown when last backup > 3 days ago) -->
+  <div id="backup-reminder-banner" role="alert" aria-live="assertive">
+    <span>⚠️ It's been 3 days since your last backup! Please backup now.</span>
+    <button id="banner-backup-now-btn">💾 Backup Now</button>
+  </div>
+
   <!-- PWA Bar -->
   <div id="pwa-bar" role="toolbar" aria-label="App controls">
     <div class="pwa-left">
@@ -1198,9 +1306,12 @@
       <span id="storage-display" aria-label="Storage used">💾 –</span>
     </div>
     <div class="pwa-right">
+      <span id="backup-reminder-msg">⚠️ Please press Backup whenever you add new entries!</span>
       <button class="btn-pwa" id="backup-btn" title="Download all observations as JSON">💾 Backup</button>
-      <button class="btn-pwa" id="restore-btn" title="Restore observations from JSON file">📂 Restore</button>
+      <button class="btn-pwa" id="load-backup-btn" title="Load a backup JSON file">📂 Load Backup</button>
+      <button class="btn-pwa" id="restore-btn" title="Restore observations from JSON file">🔄 Restore</button>
       <input type="file" id="restore-input" accept=".json" aria-label="Restore from JSON file" />
+      <input type="file" id="load-backup-input" accept=".json" aria-label="Load backup JSON file" />
     </div>
   </div>
 
@@ -1959,11 +2070,11 @@
       window.addEventListener('focus', updateStorageDisplay);
 
       // ── Backup to JSON ───────────────────────────────
-      document.getElementById('backup-btn')?.addEventListener('click', () => {
+      function performBackup() {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
           const data = raw ? JSON.parse(raw) : [];
-          if (!data.length) { toast('No observations to backup yet.', 'error'); return; }
+          if (!data.length) { toast('No observations to backup yet.', 'error'); return false; }
 
           const blob = new Blob(
             [JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), observations: data }, null, 2)],
@@ -1973,16 +2084,27 @@
           const a = document.createElement('a');
           const date = new Date().toISOString().slice(0, 10);
           a.href = url;
-          a.download = `space-journal-backup-${date}.json`;
+          a.download = `space_journal_${date}.json`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
+
+          // Record backup time and dismiss reminder banner
+          localStorage.setItem('last_backup_time', Date.now().toString());
+          const banner = document.getElementById('backup-reminder-banner');
+          if (banner) banner.classList.remove('show');
+
           toast(`✦ Backup of ${data.length} observation(s) downloaded!`);
+          return true;
         } catch (err) {
           toast('Backup failed: ' + err.message, 'error');
+          return false;
         }
-      });
+      }
+
+      document.getElementById('backup-btn')?.addEventListener('click', performBackup);
+      document.getElementById('banner-backup-now-btn')?.addEventListener('click', performBackup);
 
       // ── Restore from JSON ────────────────────────────
       const restoreBtn = document.getElementById('restore-btn');
@@ -2026,6 +2148,150 @@
       });
 
       updateStorageDisplay();
+
+      // ── Load Backup File ────────────────────────────
+      const loadBackupBtn = document.getElementById('load-backup-btn');
+      const loadBackupInput = document.getElementById('load-backup-input');
+
+      loadBackupBtn?.addEventListener('click', () => loadBackupInput?.click());
+
+      loadBackupInput?.addEventListener('change', () => {
+        const file = loadBackupInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const parsed = JSON.parse(ev.target.result);
+            const imported = Array.isArray(parsed)
+              ? parsed
+              : (Array.isArray(parsed.observations) ? parsed.observations : null);
+            if (!imported) throw new Error('Unrecognised file format.');
+
+            const existing = (() => {
+              try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+              catch { return []; }
+            })();
+
+            let finalData;
+            if (existing.length > 0) {
+              const choice = confirm(
+                `Found ${imported.length} entries in the backup file.\n\n` +
+                `You currently have ${existing.length} entries.\n\n` +
+                `Click OK to MERGE (keep both), or Cancel to REPLACE with backup data.`
+              );
+              if (choice) {
+                // Merge: add records whose id doesn't already exist
+                const existingIds = new Set(existing.map(o => o.id));
+                const newObs = imported.filter(o => o.id && !existingIds.has(o.id));
+                finalData = [...newObs, ...existing];
+                toast(`✦ Merged ${newObs.length} new entry(s). Reloading…`);
+              } else {
+                finalData = imported;
+                toast(`✦ Replaced with ${imported.length} entry(s) from backup. Reloading…`);
+              }
+            } else {
+              finalData = imported;
+              toast(`✦ Loaded ${imported.length} entry(s) from backup. Reloading…`);
+            }
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(finalData));
+            setTimeout(() => window.location.reload(), 1800);
+          } catch (err) {
+            toast('Load backup failed: ' + err.message, 'error');
+          }
+        };
+        reader.readAsText(file);
+        loadBackupInput.value = '';
+      });
+
+    })();
+
+    /* =====================================================
+       AUTO-SAVE, AUTO-RECOVERY, BACKUP REMINDER
+    ===================================================== */
+    (function () {
+      'use strict';
+
+      const STORAGE_KEY     = 'tue_observations_v1';
+      const AUTO_SAVE_KEY   = 'journal_auto_save';
+      const BACKUP_TIME_KEY = 'last_backup_time';
+      const THREE_DAYS_MS   = 3 * 24 * 60 * 60 * 1000;
+      const SEVEN_DAYS_MS   = 7 * 24 * 60 * 60 * 1000;
+
+      // ── Auto-Recovery ───────────────────────────────
+      // On page load: if main storage is empty but an auto-save exists, restore it.
+      (function autoRecovery() {
+        try {
+          const main = localStorage.getItem(STORAGE_KEY);
+          const mainData = main ? JSON.parse(main) : [];
+          if (mainData && mainData.length > 0) return; // existing data — do nothing
+
+          const saved = localStorage.getItem(AUTO_SAVE_KEY);
+          if (!saved) return;
+          const savedData = JSON.parse(saved);
+          if (!Array.isArray(savedData) || !savedData.length) return;
+
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(savedData));
+          console.log('[AutoRecovery] Restored', savedData.length, 'observations from auto-save.');
+          // Reload so the main app picks up the restored data
+          window.location.reload();
+        } catch (e) {
+          console.warn('[AutoRecovery] Failed:', e);
+        }
+      })();
+
+      // ── Auto-Save every 5 minutes ───────────────────
+      function autoSave() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+          localStorage.setItem(AUTO_SAVE_KEY, raw);
+
+          // Show notification
+          const notice = document.getElementById('autosave-notice');
+          if (notice) {
+            notice.classList.add('show');
+            clearTimeout(notice._t);
+            notice._t = setTimeout(() => notice.classList.remove('show'), 2000);
+          }
+        } catch (e) {
+          console.warn('[AutoSave] Failed:', e);
+        }
+      }
+
+      setInterval(autoSave, 5 * 60 * 1000);
+
+      // ── Backup Reminder Banner (>3 days since last backup) ──
+      (function checkBackupReminder() {
+        try {
+          const lastBackup = localStorage.getItem(BACKUP_TIME_KEY);
+          if (!lastBackup) return; // Never backed up — don't nag on very first use
+          const elapsed = Date.now() - parseInt(lastBackup, 10);
+          if (elapsed > THREE_DAYS_MS) {
+            const banner = document.getElementById('backup-reminder-banner');
+            if (banner) banner.classList.add('show');
+          }
+        } catch (e) {
+          console.warn('[BackupReminder] Failed:', e);
+        }
+      })();
+
+      // ── beforeunload Warning (>7 days since last backup) ──
+      window.addEventListener('beforeunload', (e) => {
+        try {
+          const lastBackup = localStorage.getItem(BACKUP_TIME_KEY);
+          const elapsed = lastBackup
+            ? Date.now() - parseInt(lastBackup, 10)
+            : Infinity;
+          if (elapsed > SEVEN_DAYS_MS) {
+            const msg = 'You have unsaved data!';
+            e.preventDefault();
+            e.returnValue = msg;
+            return msg;
+          }
+        } catch (_) {}
+      });
+
     })();
   </script>
 </body>
